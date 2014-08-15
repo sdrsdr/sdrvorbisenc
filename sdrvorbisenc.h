@@ -63,6 +63,10 @@ sdrvorbisenc_state* sdrvorbisenc_init(void*udata,sdrvorbisenc_bytesout bytesout,
 //submit numsamples=0 for eos marker (samples is ignored)
 int sdrvorbisenc_submit (sdrvorbisenc_state*ves, float*samples, int numsamples);
 
+//metadata:
+void sdrvorbisenc_meta(sdrvorbisenc_state*ves, const char* key,const char *value);
+void sdrvorbisenc_meta_flush(sdrvorbisenc_state*ves);
+
 //cleanup state
 void sdrvorbisenc_cleanup(sdrvorbisenc_state*ves);
 

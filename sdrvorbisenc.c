@@ -53,8 +53,9 @@ sdrvorbisenc_state* sdrvorbisenc_init(void*udata,sdrvorbisenc_bytesout bytesout,
 	
 	/* add a comment */
 	vorbis_comment_init(&ves->vc);
-	vorbis_comment_add_tag(&ves->vc,"ENCODER","encoder_test.c");
+	
 	if (ves->addcomment) ves->addcomment(&ves->vc);
+	else vorbis_comment_add_tag(&ves->vc,"ENCODER","libsdrvorbisenc");
 	
 	/* set up the analysis state and auxiliary encoding storage */
 	vorbis_analysis_init(&ves->vd,&ves->vi);
@@ -78,8 +79,9 @@ sdrvorbisenc_state* sdrvorbisenc_init(void*udata,sdrvorbisenc_bytesout bytesout,
 		ogg_packet header_code;
 		
 		vorbis_analysis_headerout(&ves->vd,&ves->vc,&header,&header_comm,&header_code);
-		ogg_stream_packetin(&ves->os,&header); /* automatically placed in its own
-		page */
+		
+		
+		ogg_stream_packetin(&ves->os,&header); /* automatically placed in its own page */
 		ogg_stream_packetin(&ves->os,&header_comm);
 		ogg_stream_packetin(&ves->os,&header_code);
 		
@@ -90,9 +92,25 @@ sdrvorbisenc_state* sdrvorbisenc_init(void*udata,sdrvorbisenc_bytesout bytesout,
 			ves->bytesout(ves->og.header,ves->og.header_len,ves->udata);
 			ves->bytesout(ves->og.body,ves->og.body_len,ves->udata);
 		}
-		
+		vorbis_comment_clear(&ves->vc);
 	}
 	return ves;
+}
+
+void sdrvorbisenc_meta(sdrvorbisenc_state*ves, const char* key,const char *value){
+	vorbis_comment_add_tag(&ves->vc,key,value);
+}
+
+void sdrvorbisenc_meta_flush(sdrvorbisenc_state*ves){
+	ogg_packet cpack;
+	vorbis_commentheader_out(&ves->vc,&cpack);
+
+	ogg_stream_packetin(&ves->os,&cpack);
+	while(ogg_stream_flush(&ves->os,&ves->og)!=0){
+		ves->bytesout(ves->og.header,ves->og.header_len,ves->udata);
+		ves->bytesout(ves->og.body,ves->og.body_len,ves->udata);
+	}
+	vorbis_comment_clear(&ves->vc);
 }
 
 int sdrvorbisenc_submit (sdrvorbisenc_state*ves, float*samples, int numsamples){
